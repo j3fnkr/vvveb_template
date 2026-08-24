@@ -1,0 +1,107 @@
+services:
+  vvveb:
+    image: vvveb/vvvebcms:latest
+    container_name: vvveb
+    environment:
+      DB_ENGINE: ${DB_ENGINE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - db
+    volumes:
+      - vvveb:/var/www/html
+    networks:
+      - frontend
+      - backend
+
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    container_name: caddy
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "443:8081"
+    tmpfs:
+      - /tmp
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ${PWD}/conf/:/etc/caddy:ro
+      - type: tmpfs
+        target: /usr/local/share/ca-certificates
+      - type: tmpfs
+        target: /etc/ssl/certs
+    depends_on:
+      - vvveb
+    networks:
+      - frontend
+    read_only: true
+
+  db:
+    image: mariadb:10.11
+    container_name: vvveb_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend
+
+  vvvebcli:
+    profiles: ["tools"]
+    image: vvveb/vvvebcms:latest
+    volumes:
+      - vvveb:/var/www/html
+    environment:
+      DB_ENGINE: ${DB_ENGINE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - backend
+    depends_on:
+      - db
+      - vvveb
+    entrypoint: ["php", "/var/www/html/cli.php"]
+    working_dir: /var/www/html
+
+  kopia:
+    profiles: ["backup"]
+    image: kopia/kopia:latest
+    hostname: vvveb-backup
+    volumes:
+      - kopia_data:/data
+      - kopia_config:/app/config
+      - kopia_cache:/app/cache
+      - kopia_logs:/app/logs
+      - vvveb:/backup/vvveb:ro
+      - db_data:/backup/db:ro
+      - caddy_data:/backup/caddy_data:ro
+      - caddy_config:/backup/caddy_config:ro
+    environment:
+      KOPIA_PASSWORD: ${KOPIA_PASSWORD}
+
+volumes:
+  db_data: {}
+  vvveb: {}
+  caddy_data: {}
+  caddy_config: {}
+  kopia_data: {}
+  kopia_config: {}
+  kopia_cache: {}
+  kopia_logs: {}
+
+networks:
+  frontend:
+    external: true
+    name: ${NETWORK}
+  backend: {}

@@ -1,0 +1,8 @@
+{
+    email ${EMAIL}
+}
+
+${HOSTNAME}:8081 {
+    reverse_proxy vvveb:80
+    encode gzip
+}
