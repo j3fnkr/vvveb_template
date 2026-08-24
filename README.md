@@ -29,7 +29,7 @@ cp .env.example .env
 Required variables:
 
 - `HOSTNAME`, `EMAIL`
-- `DB_ENGINE` (default `mysqli`)
+- `DB_ENGINE` (default `mysqli`, PHP's MySQLi driver for MySQL/MariaDB)
 - `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`
 - `DB_ROOT_PASSWORD`
 - `KOPIA_PASSWORD`
@@ -60,7 +60,7 @@ With services running:
 
 ```bash
 docker compose --profile tools run --rm vvvebcli install \
-  engine=mysqli host=db user=vvveb your-db-password database=vvveb \
+  engine=mysqli host=db user=vvveb password= database=vvveb \
   'admin[email]=admin@example.com' \
   'admin[username]=admin' \
   'admin[password]=change-me'

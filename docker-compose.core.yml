@@ -14,32 +14,7 @@ services:
     volumes:
       - vvveb:/var/www/html
     networks:
-      - frontend
       - backend
-
-  caddy:
-    image: caddy:2.10
-    restart: unless-stopped
-    container_name: caddy
-    cap_add:
-      - NET_ADMIN
-    ports:
-      - "443:8081"
-    tmpfs:
-      - /tmp
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
-      - ${PWD}/conf/:/etc/caddy:ro
-      - type: tmpfs
-        target: /usr/local/share/ca-certificates
-      - type: tmpfs
-        target: /etc/ssl/certs
-    depends_on:
-      - vvveb
-    networks:
-      - frontend
-    read_only: true
 
   db:
     image: mariadb:10.11
@@ -85,23 +60,16 @@ services:
       - kopia_logs:/app/logs
       - vvveb:/backup/vvveb:ro
       - db_data:/backup/db:ro
-      - caddy_data:/backup/caddy_data:ro
-      - caddy_config:/backup/caddy_config:ro
     environment:
       KOPIA_PASSWORD: ${KOPIA_PASSWORD}
 
 volumes:
   db_data: {}
   vvveb: {}
-  caddy_data: {}
-  caddy_config: {}
   kopia_data: {}
   kopia_config: {}
   kopia_cache: {}
   kopia_logs: {}
 
 networks:
-  frontend:
-    external: true
-    name: ${NETWORK}
   backend: {}
