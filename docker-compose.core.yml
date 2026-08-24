@@ -1,0 +1,75 @@
+services:
+  vvveb:
+    image: vvveb/vvvebcms:latest
+    container_name: vvveb
+    environment:
+      DB_ENGINE: ${DB_ENGINE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - db
+    volumes:
+      - vvveb:/var/www/html
+    networks:
+      - backend
+
+  db:
+    image: mariadb:10.11
+    container_name: vvveb_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend
+
+  vvvebcli:
+    profiles: ["tools"]
+    image: vvveb/vvvebcms:latest
+    volumes:
+      - vvveb:/var/www/html
+    environment:
+      DB_ENGINE: ${DB_ENGINE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - backend
+    depends_on:
+      - db
+      - vvveb
+    entrypoint: ["php", "/var/www/html/cli.php"]
+    working_dir: /var/www/html
+
+  kopia:
+    profiles: ["backup"]
+    image: kopia/kopia:latest
+    hostname: vvveb-backup
+    volumes:
+      - kopia_data:/data
+      - kopia_config:/app/config
+      - kopia_cache:/app/cache
+      - kopia_logs:/app/logs
+      - vvveb:/backup/vvveb:ro
+      - db_data:/backup/db:ro
+    environment:
+      KOPIA_PASSWORD: ${KOPIA_PASSWORD}
+
+volumes:
+  db_data: {}
+  vvveb: {}
+  kopia_data: {}
+  kopia_config: {}
+  kopia_cache: {}
+  kopia_logs: {}
+
+networks:
+  backend: {}
